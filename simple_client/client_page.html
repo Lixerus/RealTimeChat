@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        .scroll-box {
+            width: 50%;
+            height: 70%;
+            overflow: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        .message{
+            border: 1px solid #000;
+            border-radius: 5px;
+            margin : 1%;
+        }
+        .text{
+            word-wrap: break-word
+        }
+    </style>
+</head>
+<body>
+    <h3>Login or register</h3>
+    <form method="post" action="" id = "reg_form">
+        <p>
+          <label for="name">Name:</label>
+          <input type="text" id="name" name="username" required/>
+        </p>
+        <p>
+          <label for="password">Password:</label>
+          <input type="password" id="password" name="password" required/>
+        </p>
+    <button type="submit" onclick="sendToRegister(event)">Register</button>
+    <button type="submit" onclick="sendToLogin(event)">Login</button>
+    </form>
+    <div style="margin: 1% 0%;">
+    <strong >Your current status : </strong> 
+    <strong id = 'status'>Guest</strong> 
+    </div>
+    <div id="container">
+        <button id="ws_button" onclick="connectToChat(event)">Connect to chatroom</button>
+        <div id="chat_room" class="scroll-box"></div>
+    </div>
+
+    <script>
+        async function sendToRegister(event){
+            event.preventDefault()
+            console.log("IM NOT DEAD")
+            const Url = "http://localhost:8000/register";
+            var Login = document.getElementById('name').value;
+            var Password = document.getElementById('password').value;
+            console.log(name, password)
+            const data = {
+                login : Login,
+                password : Password,
+            }
+            const response = await fetch(
+                url = Url,
+                {
+                    body : JSON.stringify(data),
+                    headers : {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    method : "POST",
+                }
+            );
+            try {
+                const result = await response.json();
+                console.log("Success:", result);
+              } catch (error) {
+                console.error("Error:", error);
+              }
+        };
+
+        async function sendToLogin(event){
+            event.preventDefault();
+            console.log("IM NOT DEAD2");
+            const Url = "http://localhost:8000/token";
+            formElement = document.getElementById('reg_form');
+            const data = new URLSearchParams(new FormData(formElement));
+            console.log(data);
+            const response = await fetch(
+                url = Url,
+                {
+                    body : data,
+                    headers : {
+                        'Accept': 'application/json',
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    method : "POST",
+                }
+            );
+            try {
+                const result = await response.json();
+                console.log("Success:", result);
+                console.log(data.get('username'))
+                let status = document.getElementById('status');
+                status.innerText = data.get('username');
+                localStorage.setItem("access_token", result.access_token);
+              } catch (error) {
+                console.error("Error:", error);
+              };
+        };
+
+        async function connectToChat(event){
+            async function getTicket(){
+                const Url = "http://localhost:8000/ticket";
+                const token = localStorage.getItem("access_token");
+                if (!token){
+                    document.error("You need to log in");
+                    return null;
+                };
+                const header = new Headers({"authorization" : `Bearer ${token}`, 'Accept': 'application/json', credentials:true});
+                response = await fetch(
+                    url=Url,
+                    {headers : header, credentials:"include", method:"POST"}
+                );
+
+                const status = response.status;
+                if (status === 201){
+                    const data = await response.json();
+                    const ticket = data.ticket
+                    return ticket;
+                }
+                else if (status === 400){
+                    document.error("Bad request");
+                }
+                else if (status === 401){
+                    document.error("Invalid account data. Try to relogin");
+                }
+                return null;
+
+            };
+            const ticket = await getTicket();
+            if (!ticket){
+                console.log(ticket)
+                return null;
+            };
+            var ws = new WebSocket(`ws://localhost:8001/ws?ticket=${encodeURIComponent(ticket)}`);
+            ws.onmessage = function(event){
+                let messages = document.getElementById('chat_room');
+                console.log(event.data);
+                const data = event.data.split(' ');
+                let message = document.createElement('div');
+                message.classList.add('message');
+                let user = document.createElement('p');
+                user.classList.add('user')
+                user.innerText = `Username : ${data[0]}`
+                message.appendChild(user)
+                let chatContent = document.createElement('p');
+                chatContent.classList.add('text');
+                chatContent.innerText = `Message : ${data[1]}`;
+                message.appendChild(chatContent);
+                messages.appendChild(message);
+            };
+            ws.onopen = function(){
+                let chatContainer = document.getElementById('container');
+                let chatInput = document.createElement('textarea');
+                chatInput.setAttribute('id', 'text_data');
+                chatInput.setAttribute('type', 'text');
+                let chatSendBtn = document.createElement("button");
+                chatSendBtn.setAttribute("id", "sendText");
+                chatSendBtn.innerText = "Send Text";
+                chatSendBtn.addEventListener('click', sendData);
+                chatContainer.appendChild(chatInput);
+                chatContainer.appendChild(chatSendBtn);
+                };
+            function sendData(){
+                console.log("SEND IS IN USE");
+                const textElem = document.getElementById("text_data");
+                const name = document.getElementById("status");
+                ws.send(`${name} ${textElem.value}`);
+                textElem.value = '';
+                };
+            };
+    </script>
+</body>
+</html>
