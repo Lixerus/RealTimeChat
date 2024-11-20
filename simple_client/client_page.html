@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="chat.js"></script>
     <title>Chat</title>
     <style>
-        .scroll-box {
-            width: 50%;
-            height: 70%;
-            overflow: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
+        .container {
+          max-width: 400px;
+          max-height: 400px;
+          overflow: scroll; /* OR overflow: auto */
         }
         .message{
             border: 1px solid #000;
@@ -42,7 +41,6 @@
     </div>
     <div id="container">
         <button id="ws_button" onclick="connectToChat(event)">Connect to chatroom</button>
-        <div id="chat_room" class="scroll-box"></div>
     </div>
 
     <script>
@@ -105,78 +103,6 @@
                 console.error("Error:", error);
               };
         };
-
-        async function connectToChat(event){
-            async function getTicket(){
-                const Url = "http://localhost:8000/ticket";
-                const token = localStorage.getItem("access_token");
-                if (!token){
-                    document.error("You need to log in");
-                    return null;
-                };
-                const header = new Headers({"authorization" : `Bearer ${token}`, 'Accept': 'application/json', credentials:true});
-                response = await fetch(
-                    url=Url,
-                    {headers : header, credentials:"include", method:"POST"}
-                );
-
-                const status = response.status;
-                if (status === 201){
-                    const data = await response.json();
-                    const ticket = data.ticket
-                    return ticket;
-                }
-                else if (status === 400){
-                    document.error("Bad request");
-                }
-                else if (status === 401){
-                    document.error("Invalid account data. Try to relogin");
-                }
-                return null;
-
-            };
-            const ticket = await getTicket();
-            if (!ticket){
-                console.log(ticket)
-                return null;
-            };
-            var ws = new WebSocket(`ws://localhost:8001/ws?ticket=${encodeURIComponent(ticket)}`);
-            ws.onmessage = function(event){
-                let messages = document.getElementById('chat_room');
-                console.log(event.data);
-                const data = event.data.split(' ');
-                let message = document.createElement('div');
-                message.classList.add('message');
-                let user = document.createElement('p');
-                user.classList.add('user')
-                user.innerText = `Username : ${data[0]}`
-                message.appendChild(user)
-                let chatContent = document.createElement('p');
-                chatContent.classList.add('text');
-                chatContent.innerText = `Message : ${data[1]}`;
-                message.appendChild(chatContent);
-                messages.appendChild(message);
-            };
-            ws.onopen = function(){
-                let chatContainer = document.getElementById('container');
-                let chatInput = document.createElement('textarea');
-                chatInput.setAttribute('id', 'text_data');
-                chatInput.setAttribute('type', 'text');
-                let chatSendBtn = document.createElement("button");
-                chatSendBtn.setAttribute("id", "sendText");
-                chatSendBtn.innerText = "Send Text";
-                chatSendBtn.addEventListener('click', sendData);
-                chatContainer.appendChild(chatInput);
-                chatContainer.appendChild(chatSendBtn);
-                };
-            function sendData(){
-                console.log("SEND IS IN USE");
-                const textElem = document.getElementById("text_data");
-                const name = document.getElementById("status");
-                ws.send(`${name} ${textElem.value}`);
-                textElem.value = '';
-                };
-            };
     </script>
 </body>
 </html>

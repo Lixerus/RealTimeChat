@@ -18,15 +18,16 @@ class ChatMessagesClient:
         cls._channel = await cls._connection.channel(publisher_confirms=True)
         cls._exchange = await cls._channel.declare_exchange(name='chat_messages', type=ExchangeType.FANOUT, durable=True)
         cls._msg_queue = await cls._channel.declare_queue(exclusive=True, durable=True)
+        await cls._msg_queue.bind(cls._exchange.name)
         await cls._msg_queue.consume(cls._recieve_msg, no_ack=False)
 
     @classmethod
     async def _recieve_msg(cls, message: AbstractIncomingMessage) -> None:
-        with message.process():
+        async with message.process():
             tokens = message.body.decode().split(' ')
             websockets : set[WebSocket] = WsChatManager.get_ws_in_group(tokens[0])
             ws_send_tasks = [asyncio.create_task(ws.send_text(f'{tokens[1]} {tokens[2]}')) for ws in websockets]
-        results = await asyncio.gather(ws_send_tasks,return_exceptions=True)
+        results = await asyncio.gather(*ws_send_tasks,return_exceptions=True)
         for result in results:
             if result != None:
                 print(f"GOT an error while sending the message. {result}")
@@ -34,10 +35,10 @@ class ChatMessagesClient:
     @classmethod
     async def broadcast_msg(cls, channel: str, username: str, message: str) -> int:
         message = f'{channel} {username} {message}'
+        print("SEMDOMG", message)
         await cls._exchange.publish(
             Message(
                 message.encode(),
                 content_type="text/plain",
-                delivery_mode='persistent'
-                ))
-        return True
+                delivery_mode=aio_pika.DeliveryMode.PERSISTENT
+                ), routing_key='useless')

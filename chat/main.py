@@ -1,8 +1,11 @@
-from fastapi import FastAPI, Depends, WebSocket, Query
+from fastapi import FastAPI, Depends, WebSocket, Query, Response
 from fastapi.websockets import WebSocketDisconnect
+from fastapi.exceptions import ValidationException
 import uvicorn
 from ws_manager import WsChatManager
-from auth_rpc_client import AuthRpcClient
+from auth_rpc_client import AuthRpcClient, RpcStatuses
+from validation import WsMessage, WsMsgTypes
+from chat_client import ChatMessagesClient
 from typing import Annotated, Callable
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware import Middleware
@@ -13,6 +16,7 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Startup")
     await AuthRpcClient._connect()
+    await ChatMessagesClient._connect()
     yield
 
 middlewares = [
@@ -29,27 +33,36 @@ if __name__ == "__main__":
 def get_auth_rpc_call():
     return AuthRpcClient.verify_ticket
 
-async def get_message_handler():
-    return WsChatManager.handle_message
+async def get_message_publish():
+    return ChatMessagesClient.broadcast_msg
 
 
 @app.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket, ticket : Annotated[str, Query()],
     verify_func : Annotated[Callable, Depends(get_auth_rpc_call)],
-    message_handler : Annotated[Callable, Depends(get_message_handler)]
+    publish_message : Annotated[Callable, Depends(get_message_publish)]
     ):
-    print(f"GOT {ticket}")
     result = await verify_func(ticket)
-    print(result)
-    if result != 'accept':
-        await websocket.close()
+    if result != RpcStatuses.ACCEPT.value:
+        return Response(status_code = 401)
     await websocket.accept()
+    print(websocket.client)
     try:
         while True:
             data = await websocket.receive_text()
-            success = await message_handler(data)
-            if not success:
-                await websocket.close()
+            print(data)
+            message = WsMessage(data)
+            if message.msg_type == WsMsgTypes.NEW_MESSAGE_HEADER:
+                group, username, text = message.get_message()
+                await publish_message(group, username, text)
+            else:
+                prev_group, new_group = message.get_message()
+                WsChatManager.switch_groups(websocket, prev_group, new_group)
     except WebSocketDisconnect:
+        print("Ws unexpectedly closed")
         WsChatManager.del_from_group_on_disconnect(websocket)
+    except ValidationException as e:
+        print(e.errors())
+        await websocket.close(code=1003, reason="Bad message")
+        print(WsChatManager.del_from_group_on_disconnect(websocket))
