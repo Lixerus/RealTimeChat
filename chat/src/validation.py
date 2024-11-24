@@ -1,6 +1,6 @@
 from enum import Enum
 from fastapi.exceptions import ValidationException
-from ws_manager import WsChatManager
+from .ws_manager import WsChatManager
 from re import findall
 
 class WsMsgTypes(Enum):
@@ -13,7 +13,6 @@ class WsMessage:
     def __init__(self, message : str):
         try:
             self.tokens = message.split(' ',3)
-            print(self.tokens)
             self.msg_type = WsMsgTypes(self.tokens[0])
             if self.msg_type == WsMsgTypes.NEW_MESSAGE_HEADER:
                 self.validate_message()
@@ -50,10 +49,9 @@ class WsMessage:
         '''
             Simple search for tags. Approach with sanitization could be used.
         '''
-        re_pattern = r'\b(?:<script>|</script>|<iframe>|</iframe>)\b'
+        re_pattern = r'(?:<script>|</script>|<iframe>|</iframe>)'
         result = findall(re_pattern, input)
         assert len(result) == 0
 
     def get_message(self):
-        print("asdasdasda",self.tokens[1:])
         return self.tokens[1:]

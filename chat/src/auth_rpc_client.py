@@ -1,5 +1,5 @@
 import aio_pika
-from aio_pika.abc import AbstractExchange, AbstractConnection, AbstractQueue, AbstractChannel, AbstractIncomingMessage
+from aio_pika.abc import AbstractConnection, AbstractQueue, AbstractChannel, AbstractIncomingMessage
 from typing import Protocol
 from enum import Enum
 import asyncio

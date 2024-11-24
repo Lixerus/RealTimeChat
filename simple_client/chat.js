@@ -1,4 +1,4 @@
-async function connectToChat(event){
+async function connectToChat(){
     async function getTicket(){
         const Url = "http://localhost:8000/ticket";
         const token = localStorage.getItem("access_token");
@@ -29,14 +29,29 @@ async function connectToChat(event){
     };
     const ticket = await getTicket();
     if (!ticket){
-        console.log(ticket)
         return null;
     };
     var ws = new WebSocket(`ws://localhost:80/ws?ticket=${encodeURIComponent(ticket)}`);
-    ws.onmessage = function(event){
+    function setupConnectBtn(){
+        let container = document.getElementById('container');
+        container.replaceChildren();
+        let connectButton = document.createElement('button');
+        connectButton.setAttribute('id', 'ws_button');
+        connectButton.addEventListener('click', connectToChat);
+        connectButton.innerText = 'Connect to chatroom';
+        container.replaceChildren(connectButton);
+    };
+    function setupDisconnectBtn(){
+        let connectButton = document.getElementById('ws_button');
+        connectButton.removeEventListener('click', connectToChat)
+        connectButton.addEventListener('click', () => {ws.close();setupConnectBtn();});
+        connectButton.innerText = 'Disconnect';
+    };
+    setupDisconnectBtn();
+
+    function showMessage(msg){
+        const data = msg.split(' ');
         let messages = document.getElementById('chat_room');
-        console.log(event.data);
-        const data = event.data.split(' ');
         let message = document.createElement('div');
         message.classList.add('message');
         let user = document.createElement('p');
@@ -45,16 +60,31 @@ async function connectToChat(event){
         message.appendChild(user)
         let chatContent = document.createElement('p');
         chatContent.classList.add('text');
-        chatContent.innerText = `Message : ${data[1]}`;
+        chatContent.innerText = `Message : ${data.slice(1).join(' ')}`;
         message.appendChild(chatContent);
         messages.appendChild(message);
+    };
+
+    ws.onmessage = function(event){
+        console.log(event.data);
+        if (event.data[0] === '['){
+            let allMsgs = event.data.slice(2,-2);
+            const msgList = allMsgs.split('","');
+            msgList.forEach(element => {
+                showMessage(element);
+            });
+        }
+        else {
+        showMessage(event.data);
+        };
     };
     ws.onopen = function(){
         let chatContainer = document.getElementById('container');
 
         let chatGroups = document.createElement('div');
         chatGroups.setAttribute('id', 'groups');
-        chatGroups.innerText = "Group : ";
+        chatGroups.setAttribute('class', 'groups-bar')
+        chatGroups.innerText = "Group :";
         let groupNumber = document.createElement('b');
         groupNumber.setAttribute('id', 'group_number');
         groupNumber.innerText = 'null';
@@ -90,7 +120,7 @@ async function connectToChat(event){
 
         let chatRoom = document.createElement('div');
         chatRoom.setAttribute('id', 'chat_room');
-        chatRoom.setAttribute('class', 'container');
+        chatRoom.setAttribute('class', 'chat-room');
 
         chatContainer.appendChild(chatGroups);
         chatContainer.appendChild(chatRoom);
@@ -98,12 +128,11 @@ async function connectToChat(event){
         chatContainer.appendChild(chatSendBtn);
         };
     function sendMessage(){
-        console.log("SEND IS IN USE");
         const textElem = document.getElementById("text_data");
         const name = document.getElementById("status").innerText;
         const group = document.getElementById('group_number').innerText;
         const header = 'msg';
-        ws.send(`${header} ${group} ${name} ${textElem.value}`);
+        ws.send(`${header} ${group} ${name} ${textElem.value.trim()}`);
         textElem.value = '';
         };
     function sendGroup(newGroupNumber){
@@ -121,9 +150,9 @@ async function connectToChat(event){
     }
     ws.onclose = function(event){
         if (event.wasClean) {
-            alert(`[close] Connection closed, code=${event.code} reason=${event.reason}`);
+            alert(`Connection closed, code=${event.code} reason=${event.reason}`);
         } else {
-            alert('[close] Disconnected');
+            alert('Disconnected');
         };
     };
 };

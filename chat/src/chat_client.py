@@ -3,7 +3,7 @@ from aio_pika.message import Message
 from aio_pika.abc import AbstractExchange, AbstractConnection, AbstractQueue, AbstractChannel, AbstractIncomingMessage
 from fastapi import WebSocket
 from aio_pika.exchange import ExchangeType
-from ws_manager import WsChatManager
+from .ws_manager import WsChatManager
 import asyncio
 
 class ChatMessagesClient:
@@ -24,7 +24,7 @@ class ChatMessagesClient:
     @classmethod
     async def _recieve_msg(cls, message: AbstractIncomingMessage) -> None:
         async with message.process():
-            tokens = message.body.decode().split(' ')
+            tokens = message.body.decode().split(' ',2)
             websockets : set[WebSocket] = WsChatManager.get_ws_in_group(tokens[0])
             ws_send_tasks = [asyncio.create_task(ws.send_text(f'{tokens[1]} {tokens[2]}')) for ws in websockets]
         results = await asyncio.gather(*ws_send_tasks,return_exceptions=True)
@@ -35,10 +35,9 @@ class ChatMessagesClient:
     @classmethod
     async def broadcast_msg(cls, channel: str, username: str, message: str) -> int:
         message = f'{channel} {username} {message}'
-        print("SEMDOMG", message)
         await cls._exchange.publish(
             Message(
                 message.encode(),
                 content_type="text/plain",
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT
-                ), routing_key='useless')
+                ), routing_key='usls')

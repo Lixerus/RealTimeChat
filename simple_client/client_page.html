@@ -6,9 +6,11 @@
     <script src="chat.js"></script>
     <title>Chat</title>
     <style>
-        .container {
-          max-width: 400px;
-          max-height: 400px;
+        .chat-room {
+          width: 60%;
+          height: 400px;
+          min-height: 200px;
+          border: 1px solid #000;
           overflow: scroll; /* OR overflow: auto */
         }
         .message{
@@ -17,7 +19,19 @@
             margin : 1%;
         }
         .text{
-            word-wrap: break-word
+            word-wrap: break-word;
+            width: 50%;
+            height : 20%;
+        }
+        .groups-bar{
+            margin: 5px;
+        }
+        .container{
+            width:100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
     </style>
 </head>
@@ -39,18 +53,17 @@
     <strong >Your current status : </strong> 
     <strong id = 'status'>Guest</strong> 
     </div>
-    <div id="container">
-        <button id="ws_button" onclick="connectToChat(event)">Connect to chatroom</button>
+    <div id="container" class="container">
+        <button id="ws_button">Connect to chatroom</button>
     </div>
 
     <script>
+        document.getElementById('ws_button').addEventListener('click', connectToChat)
         async function sendToRegister(event){
             event.preventDefault()
-            console.log("IM NOT DEAD")
             const Url = "http://localhost:8000/register";
             var Login = document.getElementById('name').value;
             var Password = document.getElementById('password').value;
-            console.log(name, password)
             const data = {
                 login : Login,
                 password : Password,
@@ -68,19 +81,16 @@
             );
             try {
                 const result = await response.json();
-                console.log("Success:", result);
               } catch (error) {
-                console.error("Error:", error);
+                alert("Error:", error);
               }
         };
 
         async function sendToLogin(event){
             event.preventDefault();
-            console.log("IM NOT DEAD2");
             const Url = "http://localhost:8000/token";
             formElement = document.getElementById('reg_form');
             const data = new URLSearchParams(new FormData(formElement));
-            console.log(data);
             const response = await fetch(
                 url = Url,
                 {
@@ -94,13 +104,11 @@
             );
             try {
                 const result = await response.json();
-                console.log("Success:", result);
-                console.log(data.get('username'))
                 let status = document.getElementById('status');
                 status.innerText = data.get('username');
                 localStorage.setItem("access_token", result.access_token);
               } catch (error) {
-                console.error("Error:", error);
+                alert("Error:", error);
               };
         };
     </script>

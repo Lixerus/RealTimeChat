@@ -1,6 +1,5 @@
 from passlib.context import CryptContext
 from datetime import datetime, timezone, timedelta
-from storage import DBService
 from jwt.exceptions import InvalidTokenError
 import jwt
 
@@ -39,9 +38,9 @@ class TokenService:
         return data
     
     @classmethod
-    def verify_ticket(cls, ticket:str):
+    def verify_ticket(cls, key : str, ticket:str):
         data = TokenService.verify_access_token(ticket)
         if data:
-            ticket_id = data.get('id')
+            ticket_id = data.get(key)
             return ticket_id
         return False
