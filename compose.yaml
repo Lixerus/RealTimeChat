@@ -40,7 +40,6 @@ services:
         condition: service_started
     restart: on-failure
 
-
   redis:
     image: redis:latest
     restart: on-failure

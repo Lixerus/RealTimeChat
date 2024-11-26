@@ -15,7 +15,6 @@ class CryptographyService:
         return hashpw(plain_string.encode(), gensalt())
     
     
-
 class TokenService:
     SECRET_KEY = environ.get(key = 'SECRET_KEY', default="defaultSECRET1234567890")
     ALGORITHM = "HS256"

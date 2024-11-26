@@ -36,7 +36,6 @@ class AuthRpcConsumer:
                         response = "accept"
                     response = aio_pika.message.Message(body=response.encode(), correlation_id=message.correlation_id,)
                     routing_key=message.reply_to
-                    print(f"fff routing_key {routing_key}")
                     asyncio.create_task(cls.publish_response(response, routing_key))
         except AssertionError:
             print(f"Invalid message with body {message.body.decode()}")
