@@ -3,7 +3,7 @@ from redis import asyncio as aioredis
 import asyncio
 
 class DBService:
-    redis = aioredis.from_url("redis://localhost", decode_responses=True)
+    redis = aioredis.from_url("redis://redis", decode_responses=True)
 
     @classmethod
     async def get_user(cls, username: str, hashset_name : str = 'users'):

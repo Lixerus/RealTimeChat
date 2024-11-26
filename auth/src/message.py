@@ -11,7 +11,7 @@ class AuthRpcConsumer:
     _execution_queue : AbstractQueue
 
     @classmethod
-    async def _connect(cls, uri: str = "amqp://guest:guest@localhost/"):
+    async def _connect(cls, uri: str = "amqp://guest:guest@rabbitmq/"):
         cls._connection = await aio_pika.connect(uri)
         cls._channel = await cls._connection.channel()
         cls._exchange = cls._channel.default_exchange

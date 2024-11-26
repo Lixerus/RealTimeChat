@@ -1,23 +1,23 @@
-from passlib.context import CryptContext
+from bcrypt import gensalt, hashpw, checkpw
 from datetime import datetime, timezone, timedelta
 from jwt.exceptions import InvalidTokenError
+from os import environ
 import jwt
 
 class CryptographyService:
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
     @classmethod
-    def verify(cls, plain_string, hashed_string):
-        return cls.pwd_context.verify(plain_string, hashed_string)
+    def verify(cls, plain_string : str, hashed_string : str)->bool:
+        return checkpw(plain_string.encode(), hashed_string.encode())
 
     @classmethod
-    def get_hash(cls, plain_string):
-        return cls.pwd_context.hash(plain_string)
+    def get_hash(cls, plain_string : str) -> bytes:
+        return hashpw(plain_string.encode(), gensalt())
     
     
 
 class TokenService:
-    SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+    SECRET_KEY = environ.get(key = 'SECRET_KEY', default="defaultSECRET1234567890")
     ALGORITHM = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

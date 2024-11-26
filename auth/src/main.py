@@ -1,13 +1,11 @@
 from schemas import Token, User, Ticket, UserInDB
 from typing import Annotated
 from fastapi import Depends, FastAPI, Body
-from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware import Middleware
 from dependencies import get_current_user, authenticate_user
 from services import TokenService, CryptographyService
 from storage import DBService
-from exceptions import CredentialException
 from message import AuthRpcConsumer
 from contextlib import asynccontextmanager
 import datetime

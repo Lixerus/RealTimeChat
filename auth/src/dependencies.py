@@ -21,6 +21,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
 async def authenticate_user(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
     user = await DBService.get_user(form_data.username)
+    print(user)
     if not user:
         raise CredentialException()
     if not CryptographyService.verify(form_data.password, user.hashed_password):
