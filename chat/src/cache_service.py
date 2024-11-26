@@ -5,7 +5,7 @@ from .ws_manager import WsChatManager
 
 
 class CacheService:
-    _redis = aioredis.from_url("redis://localhost", decode_responses=True)
+    _redis = aioredis.from_url("redis://redis", decode_responses=True)
     _groups_cache_full = {group : False for group in WsChatManager.get_all_groups()}
     MAX_CACHE_LENGTH = 100
 

@@ -13,7 +13,7 @@ class ChatMessagesClient:
     _msg_queue : AbstractQueue
 
     @classmethod
-    async def _connect(cls, uri: str = "amqp://guest:guest@localhost/") -> None:
+    async def _connect(cls, uri: str = "amqp://guest:guest@rabbitmq/") -> None:
         cls._connection = await aio_pika.connect(uri)
         cls._channel = await cls._connection.channel(publisher_confirms=True)
         cls._exchange = await cls._channel.declare_exchange(name='chat_messages', type=ExchangeType.FANOUT, durable=True)

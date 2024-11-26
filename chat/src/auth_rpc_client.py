@@ -5,14 +5,6 @@ from enum import Enum
 import asyncio
 import uuid
 
-class IConsumer(Protocol):
-    connection : AbstractConnection
-    def consume_handler(): ...
-
-class IProducer(Protocol):
-    connection : AbstractConnection
-    def publish_handler(): ...
-
 class RpcStatuses(Enum):
     ACCEPT = "accept"
     REJECT = "reject"
@@ -28,7 +20,7 @@ class AuthRpcClient:
     _futures : dict[str, asyncio.Future] = {}
 
     @classmethod
-    async def _connect(cls, uri: str = "amqp://guest:guest@localhost/") -> None:
+    async def _connect(cls, uri: str = "amqp://guest:guest@rabbitmq/") -> None:
         cls._connection = await aio_pika.connect(uri)
         cls._channel = await cls._connection.channel()
         cls._callback_queue = await cls._channel.declare_queue(exclusive=True)
